@@ -1,0 +1,974 @@
+/* ==========================================
+   ドラゴンクエスト風レトロゲームスタイルシート (スクロールなし1画面フィット)
+   ========================================== */
+
+:root {
+    --bg-color: #000000;
+    --panel-bg: #000000;
+    --border-color: #ffffff;
+    --text-color: #ffffff;
+    --text-muted: #888888;
+    
+    /* レトロゲーム用パレット (明快な原色調) */
+    --color-green: #00ff00;
+    --color-purple: #ff00ff;
+    --color-red: #ff0000;
+    --color-yellow: #ffff00;
+    --color-blue: #00ffff;
+    --color-orange: #ff8800;
+    --color-white: #ffffff;
+    --color-silver: #aaaaaa;
+
+    --miasma-opacity: 0;
+}
+
+/* ==========================================
+   基本リセット
+   ========================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'DotGothic16', monospace;
+    line-height: 1.5;
+    overflow: hidden; /* PC表示ではブラウザ全体のスクロールを一切禁止 */
+    image-rendering: pixelated;
+    font-size: 13px;
+    height: 100vh;
+}
+
+/* 瘴気オーバーレイ */
+body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle, transparent 20%, rgba(255, 0, 255, 0.2));
+    opacity: var(--miasma-opacity);
+    pointer-events: none;
+    z-index: 999;
+}
+
+/* アニメーション */
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translate(0, 0); }
+    20%, 60% { transform: translate(-4px, 2px); }
+    40%, 80% { transform: translate(4px, -2px); }
+}
+
+.blink-red {
+    color: var(--color-red);
+    animation: blink 0.8s infinite;
+}
+
+.shake {
+    animation: shake 0.3s ease-in-out;
+}
+
+/* ==========================================
+   レイアウト (1画面に完全に収めるフィット仕様)
+   ========================================== */
+.game-container {
+    max-width: 1200px;
+    margin: 2vh auto;
+    padding: 0 10px;
+    height: 96vh; /* ビューポートの96%に高さを制限 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* ヘッダー */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 4px double var(--border-color); /* 二重白枠 */
+    padding: 10px 15px;
+    margin-bottom: 12px;
+    background-color: #000000;
+    flex-shrink: 0; /* 縮ませない */
+}
+
+.header-title-area {
+    text-align: left;
+}
+
+.game-header h1 {
+    font-size: 2.2rem;
+    letter-spacing: 3px;
+    color: var(--color-white);
+    text-shadow: none;
+    line-height: 1.1;
+}
+
+.subtitle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.header-system-control {
+    display: flex;
+    gap: 10px;
+}
+
+/* システムボタン */
+.btn-header-sys {
+    background-color: #000000;
+    color: var(--color-white);
+    border: 2px solid var(--border-color);
+    font-family: inherit;
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: none;
+    position: relative;
+}
+
+.btn-header-sys:hover {
+    background-color: var(--color-white);
+    color: #000000;
+}
+
+.btn-header-sys:hover::before {
+    content: "▶";
+    position: absolute;
+    left: 3px;
+    color: #000000;
+}
+
+.btn-header-sys.btn-header-danger {
+    border-color: var(--color-red);
+    color: var(--color-red);
+}
+.btn-header-sys.btn-header-danger:hover {
+    background-color: var(--color-red);
+    color: var(--color-white);
+}
+
+.legacy-banner {
+    background-color: #000000;
+    border: 2px solid var(--color-red);
+    padding: 5px;
+    font-size: 0.8rem;
+    color: var(--color-red);
+    margin-top: 5px;
+    width: 100%;
+    text-align: center;
+    animation: blink 2.5s infinite;
+}
+
+/* 3カラム (スクロール防止のフレックス伸縮) */
+.game-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 15px;
+    flex: 1; /* ヘッダー以外の縦幅を埋める */
+    overflow: hidden; /* はみ出しをカット */
+    height: 0; /* Flexハック */
+}
+
+/* 各種カラム */
+.sidebar-left,
+.sidebar-right,
+.main-display {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* モバイル用ナビゲーション (デフォルト非表示) */
+.mobile-tabs {
+    display: none;
+    justify-content: space-around;
+    background-color: #000000;
+    border: 4px double var(--border-color);
+    padding: 6px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+
+.mobile-tab-btn {
+    flex: 1;
+    padding: 8px 5px;
+    background-color: #000000;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-weight: bold;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.mobile-tab-btn.active {
+    border: 2px solid var(--border-color);
+    color: var(--color-white);
+}
+
+/* ==========================================
+   ドラクエ風ウィンドウパネル (統一マージン)
+   ========================================== */
+.panel {
+    background-color: #000000;
+    border: 4px double var(--border-color); /* 二重白線 */
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 0 0 2px #000000;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0; /* 基本的に潰さない */
+}
+
+.panel h2 {
+    font-size: 0.95rem;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+    color: var(--color-white);
+    flex-shrink: 0;
+}
+
+/* ==========================================
+   プレイヤー情報 (左サイド)
+   ========================================== */
+.player-status {
+    /* 自動伸縮に任せて重なりを防ぐ */
+    flex-shrink: 0;
+}
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+.status-bar-outer {
+    background-color: #000000;
+    border: 2px solid var(--border-color);
+    height: 12px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+
+.status-bar-inner {
+    height: 100%;
+}
+.status-bar-inner.hp {
+    background-color: var(--color-white);
+}
+.status-bar-inner.corruption {
+    background-color: var(--color-purple);
+}
+
+.corruption-percent {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--color-purple);
+}
+
+.corruption-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.atk-value.boosted {
+    color: var(--color-yellow);
+}
+
+.equip-value {
+    color: var(--color-yellow);
+}
+
+/* 伸縮するアーティファクトインベントリ */
+.inventory-panel {
+    flex: 1; /* 残りの高さを埋める */
+    margin-bottom: 0; /* カラム末尾のパネルは余白なし */
+    overflow: hidden;
+}
+
+.inventory-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px;
+    background-color: #000000;
+    border: 1px solid var(--border-color);
+    flex: 1;
+    overflow-y: auto; /* ここだけスクロール */
+    align-content: flex-start;
+}
+
+.no-items {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    width: 100%;
+    text-align: center;
+    line-height: 30px;
+}
+
+.artifact-badge {
+    background-color: #000000;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    display: inline-block;
+    cursor: help;
+}
+
+/* ==========================================
+   中央メイン画面 (コマンドを上、戦闘・ログを下へ)
+  /* ==========================================
+   ドラクエ風コマンドボタン
+   ========================================== */
+.command-panel {
+    height: 170px;
+    overflow: hidden; /* 親ウィンドウははみ出しカット */
+    margin-bottom: 12px;
+}
+
+.command-panel h2 {
+    color: var(--color-white);
+}
+
+.command-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    height: calc(100% - 25px); /* タイトル h2 の高さを除いた領域 */
+    overflow-y: auto; /* ボタンが多くはみ出た場合は内部スクロール */
+    padding-right: 4px;
+}
+
+/* サブグループもグループ内で正しくスクロールするように設定 */
+.command-subgroup {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+/* スクロールバー表示用の調整 */
+.command-group::-webkit-scrollbar {
+    width: 4px;
+}
+.command-group::-webkit-scrollbar-track {
+    background: #000000;
+}
+.command-group::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+}
+
+.btn {
+    padding: 10px 15px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: bold;
+    background-color: #000000;
+    border: 2px solid var(--border-color);
+    color: var(--color-white);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: none;
+    text-align: left;
+    position: relative;
+    padding-left: 28px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+}
+
+.btn:hover:not(:disabled) {
+    background-color: var(--color-white);
+    color: #000000;
+}
+
+.btn:hover:not(:disabled)::before {
+    content: "▶";
+    position: absolute;
+    left: 10px;
+    color: #000000;
+}
+
+.btn:disabled {
+    color: var(--text-muted);
+    border-color: #444444;
+    cursor: not-allowed;
+}
+
+.btn-primary { border-color: var(--color-white); }
+.btn-secondary { border-color: var(--text-muted); }
+.btn-danger { border-color: var(--color-red); color: var(--color-red); }
+.btn-danger:hover:not(:disabled) { background-color: var(--color-red); color: var(--color-white); }
+.btn-danger:hover:not(:disabled)::before { color: var(--color-white); }
+
+.btn-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+.btn-warning:hover:not(:disabled) { background-color: var(--color-yellow); color: #000000; }
+.btn-warning:hover:not(:disabled)::before { color: #000000; }
+
+.btn-delete { border-color: var(--color-purple); color: var(--color-purple); }
+.btn-delete:hover:not(:disabled) { background-color: var(--color-purple); color: var(--color-white); }
+.btn-delete:hover:not(:disabled)::before { color: var(--color-white); }
+
+/* ショップ商品用 */
+.btn-shop {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    padding-left: 28px;
+}
+
+.shop-desc {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+.btn-shop:hover .shop-desc {
+    color: #000000;
+}
+
+/* 2. 下部ビジュアル・セリフログ窓パネル (伸縮して埋める) */
+.environment-panel {
+    flex: 1; /* 残りの縦幅をすべて埋める */
+    margin-bottom: 0;
+    overflow: hidden;
+}
+
+.environment-visual {
+    flex: 1; /* ビジュアルエリアを自動伸縮させ、スクロールを防ぐ */
+    min-height: 120px;
+    border: 2px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+    background-color: #000000 !important;
+}
+
+/* 敵グラフィック (枠線を小さめにし、中央に収める) */
+.enemy-sprite-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    border: 2px solid var(--border-color);
+    padding: 8px 25px;
+    background-color: #000000;
+}
+
+#enemy-sprite {
+    width: 80px;
+    height: 80px;
+}
+
+.enemy-info-overlay {
+    background-color: #000000;
+    border: 2px solid var(--border-color);
+    padding: 2px 10px;
+    font-size: 0.8rem;
+    display: flex;
+    gap: 10px;
+}
+
+/* 闇の商人 */
+.merchant-visual-container {
+    padding: 5px;
+}
+
+.sprite-merchant {
+    width: 50px;
+    height: 50px;
+}
+
+.merchant-speech-bubble {
+    padding: 6px 12px;
+    margin-top: 8px;
+    font-size: 0.8rem;
+    max-width: 90%;
+}
+
+/* 捕獲ケージ (グリッドがはみ出ないようにスクロール化) */
+.eco-visual-container {
+    padding: 8px;
+    height: 100%;
+}
+
+.eco-visual-title {
+    font-size: 0.9rem;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+}
+
+.eco-cages-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.eco-cage-cell {
+    padding: 4px;
+    gap: 4px;
+}
+
+.cage-sprite-mini {
+    width: 24px;
+    height: 24px;
+}
+
+.cage-info {
+    font-size: 0.7rem;
+}
+
+/* セリフ風ログ窓 (メッセージウィンドウ) */
+.rpg-dialog-window {
+    background-color: #000000;
+    border: 4px double var(--border-color);
+    border-radius: 4px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    position: relative;
+    box-shadow: 0 0 0 2px #000000;
+    flex-shrink: 0; /* 縮ませない */
+    height: 80px; /* 高さをコンパクトに制限 */
+}
+
+.rpg-dialog-window::before {
+    content: "メッセージ";
+    position: absolute;
+    top: -9px;
+    left: 15px;
+    background-color: #000000;
+    padding: 0 6px;
+    font-size: 0.7rem;
+    color: var(--color-white);
+    border: 1px solid var(--border-color);
+}
+
+.rpg-dialog-content {
+    height: 100%; /* セリフ窓内に綺麗に収める */
+    overflow-y: auto;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.rpg-dialog-content p {
+    margin-bottom: 4px;
+}
+
+.rpg-dialog-content p::before {
+    content: "＊";
+    font-size: 0.85rem;
+    margin-right: 6px;
+}
+
+/* ==========================================
+   超精密モンスタードット絵グラフィック
+   ========================================== */
+.sprite-slime,
+.sprite-fishman,
+.sprite-goblin,
+.sprite-wood_golem,
+.sprite-stone_spider,
+.sprite-jewel_slime,
+.sprite-corrupted_slime,
+.sprite-corrupted_fishman,
+.sprite-corrupted_goblin,
+.sprite-desert_fishman,
+.sprite-desert_goblin,
+.sprite-desert_cactus,
+.sprite-mud_slime,
+.sprite-fossil_fish,
+.sprite-shadow_slime,
+.sprite-abyss_fishman,
+.sprite-abyss_demon,
+.sprite-goblin_slime,
+.sprite-fishman_slime,
+.sprite-fishman_goblin,
+.sprite-wood_goblin,
+.sprite-metal_slime,
+.sprite-holy_slime,
+.sprite-mage_fishman,
+.sprite-goblin_paladin,
+.sprite-holy_golem,
+.sprite-paladin,
+.sprite-mage,
+.sprite-valkyrie,
+.sprite-mutant,
+.cage-sprite-mini {
+    background-image: url('monster_sprites.jpg') !important;
+    background-repeat: no-repeat !important;
+    image-rendering: pixelated !important;
+    border-radius: 0 !important;
+    background-size: 300% 300% !important;
+}
+
+/* 座標定義 (3x3) */
+.sprite-slime { background-position: 0% 0% !important; }
+.sprite-fishman { background-position: 50% 0% !important; }
+.sprite-goblin { background-position: 100% 0% !important; }
+.sprite-wood_golem { background-position: 0% 50% !important; }
+.sprite-stone_spider { background-position: 50% 50% !important; }
+.sprite-jewel_slime { background-position: 100% 50% !important; }
+.sprite-paladin { background-position: 0% 100% !important; }
+.sprite-mage { background-position: 50% 100% !important; }
+.sprite-valkyrie { background-position: 100% 100% !important; }
+
+.cage-sprite-mini.sprite-slime { background-position: 0% 0% !important; }
+.cage-sprite-mini.sprite-fishman { background-position: 50% 0% !important; }
+.cage-sprite-mini.sprite-goblin { background-position: 100% 0% !important; }
+.cage-sprite-mini.sprite-wood_golem { background-position: 0% 50% !important; }
+.cage-sprite-mini.sprite-stone_spider { background-position: 50% 50% !important; }
+.cage-sprite-mini.sprite-jewel_slime { background-position: 100% 50% !important; }
+.cage-sprite-mini.sprite-paladin { background-position: 0% 100% !important; }
+.cage-sprite-mini.sprite-mage { background-position: 50% 100% !important; }
+.cage-sprite-mini.sprite-valkyrie { background-position: 100% 100% !important; }
+
+/* 色違い・変異種 */
+.sprite-corrupted_slime { background-position: 0% 0% !important; filter: hue-rotate(130deg) saturate(1.5) brightness(0.8); }
+.sprite-corrupted_fishman { background-position: 50% 0% !important; filter: hue-rotate(130deg) saturate(1.5) brightness(0.7); }
+.sprite-corrupted_goblin { background-position: 100% 0% !important; filter: hue-rotate(130deg) saturate(1.8) brightness(0.6); }
+
+.sprite-desert_fishman { background-position: 50% 0% !important; filter: hue-rotate(200deg) saturate(0.8) brightness(1.2); }
+.sprite-desert_goblin { background-position: 100% 0% !important; filter: hue-rotate(-50deg) saturate(1.2) brightness(1.1); }
+.sprite-desert_cactus { background-position: 0% 50% !important; filter: hue-rotate(90deg) saturate(1.5); }
+.sprite-desert_scout { background-position: 0% 100% !important; filter: hue-rotate(-50deg) saturate(0.9); }
+
+.sprite-mud_slime { background-position: 0% 0% !important; filter: sepia(0.8) brightness(0.6); }
+.sprite-fossil_fish { background-position: 50% 0% !important; filter: grayscale(0.8) brightness(1.5); }
+.sprite-archaeologist { background-position: 50% 100% !important; filter: sepia(0.5) brightness(1.1); }
+
+.sprite-shadow_slime { background-position: 0% 0% !important; filter: brightness(0.3) saturate(2) hue-rotate(110deg); }
+.sprite-abyss_fishman { background-position: 50% 0% !important; filter: brightness(0.2) saturate(3) hue-rotate(240deg); }
+.sprite-abyss_demon { background-position: 100% 0% !important; filter: brightness(0.3) saturate(2.5) hue-rotate(-30deg); }
+.sprite-dark_knight { background-position: 0% 100% !important; filter: brightness(0.3) grayscale(0.5); }
+
+.sprite-goblin_slime { background-position: 0% 0% !important; filter: hue-rotate(-60deg) saturate(1.5); }
+.sprite-fishman_slime { background-position: 50% 0% !important; filter: hue-rotate(60deg) saturate(1.5); }
+.sprite-fishman_goblin { background-position: 100% 0% !important; filter: hue-rotate(90deg) saturate(2); }
+.sprite-wood_goblin { background-position: 100% 0% !important; filter: hue-rotate(150deg) saturate(0.8); }
+.sprite-metal_slime { background-position: 0% 0% !important; filter: grayscale(1) brightness(1.6); }
+
+.sprite-holy_slime { background-position: 0% 0% !important; filter: sepia(0.6) brightness(1.8) saturate(1.5); }
+.sprite-mage_fishman { background-position: 50% 0% !important; filter: hue-rotate(290deg) brightness(1.4); }
+.sprite-goblin_paladin { background-position: 100% 0% !important; filter: grayscale(0.5) brightness(1.5); }
+.sprite-holy_golem { background-position: 0% 50% !important; filter: sepia(0.5) brightness(1.6); }
+
+.sprite-mutant { background-position: 100% 100% !important; filter: invert(1) hue-rotate(180deg) brightness(0.8); }
+
+/* ==========================================
+   環境・生態系パネル (右サイド)
+   ========================================== */
+.corruption-panel {
+    height: 120px; /* 固定高 */
+}
+
+.ecosystem-panel {
+    flex: 1; /* 左のアーティファクトと高さを揃えて伸縮 */
+    margin-bottom: 0;
+    overflow: hidden;
+}
+
+.ecosystem-list {
+    list-style: none;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.ecosystem-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 2px solid var(--border-color);
+    font-size: 0.9rem;
+}
+
+.species-count.extinct {
+    animation: blink 1.5s infinite;
+}
+
+/* ==========================================
+   レトロ・スクロールバーのカスタマイズ (共通)
+   ========================================== */
+.inventory-list::-webkit-scrollbar,
+.rpg-dialog-content::-webkit-scrollbar,
+.eco-cages-grid::-webkit-scrollbar,
+.ecosystem-list::-webkit-scrollbar,
+.library-list::-webkit-scrollbar {
+    width: 4px;
+}
+.inventory-list::-webkit-scrollbar-track,
+.rpg-dialog-content::-webkit-scrollbar-track,
+.eco-cages-grid::-webkit-scrollbar-track,
+.ecosystem-list::-webkit-scrollbar-track,
+.library-list::-webkit-scrollbar-track {
+    background: #000000;
+}
+.inventory-list::-webkit-scrollbar-thumb,
+.rpg-dialog-content::-webkit-scrollbar-thumb,
+.eco-cages-grid::-webkit-scrollbar-thumb,
+.ecosystem-list::-webkit-scrollbar-thumb,
+.library-list::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+}
+
+/* ==========================================
+   モーダル / ターミナル
+   ========================================== */
+.system-delete-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.terminal-container {
+    width: 90%;
+    max-width: 550px;
+    background-color: #000000;
+    border: 4px double var(--border-color);
+    box-shadow: 0 0 0 2px #000000;
+}
+
+.terminal-header {
+    background-color: #000000;
+    border-bottom: 2px solid var(--border-color);
+    padding: 10px 15px;
+    color: var(--color-white);
+}
+
+.terminal-body {
+    padding: 20px;
+    color: var(--color-white);
+}
+
+.warning-text {
+    color: var(--color-red) !important;
+    border: 2px solid var(--color-red);
+    padding: 10px;
+    background-color: #000000;
+}
+
+.target-info {
+    border: 2px solid var(--border-color);
+    padding: 12px;
+    margin: 15px 0;
+}
+
+.btn-terminal {
+    flex: 1;
+    padding: 10px;
+    background-color: #000000;
+    border: 2px solid var(--border-color);
+    color: var(--color-white);
+    font-family: inherit;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+}
+
+.btn-terminal:hover {
+    background-color: var(--color-white);
+    color: #000000;
+}
+
+.breed-select {
+    background-color: #000000;
+    color: var(--color-white);
+    border: 2px solid var(--border-color);
+    padding: 6px;
+    font-family: inherit;
+}
+
+/* ==========================================
+   図鑑モーダル (サイズをダイナミックに拡大)
+   ========================================== */
+.library-container {
+    max-width: 850px; /* 従来より大幅に横幅を拡大 */
+    width: 95%;
+}
+
+.library-body {
+    display: flex;
+    flex-direction: column;
+    height: 520px; /* 縦幅を大幅に拡張して見やすさ向上 */
+}
+
+.library-top h2 {
+    color: var(--color-white);
+}
+
+.completion-rate {
+    color: var(--color-white);
+    background-color: #000000;
+    border: 2px solid var(--border-color);
+    padding: 4px 12px;
+}
+
+.library-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+
+.tab-btn {
+    padding: 6px 15px;
+    background-color: #000000;
+    border: 2px solid var(--border-color);
+    color: var(--text-muted);
+}
+
+.tab-btn.active {
+    background-color: var(--color-white);
+    color: #000000;
+}
+
+.library-main {
+    display: grid;
+    grid-template-columns: 260px 1fr; /* 左側のモンスター一覧リストを広めに確保 */
+    gap: 15px;
+    flex: 1;
+    overflow: hidden;
+}
+
+.library-list {
+    background-color: #000000;
+    border: 2px solid var(--border-color);
+    padding: 6px;
+    overflow-y: auto;
+}
+
+.library-item-btn {
+    text-align: left;
+    padding: 8px;
+    background-color: #000000;
+    border: 1px solid transparent;
+    color: var(--color-white);
+    width: 100%;
+}
+
+.library-item-btn:hover {
+    background-color: var(--color-white);
+    color: #000000;
+}
+
+.library-item-btn.selected {
+    border: 2px solid var(--border-color);
+    font-weight: bold;
+}
+
+.library-detail {
+    background-color: #000000;
+    border: 2px solid var(--border-color);
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.library-detail-name {
+    font-size: 1.2rem;
+    color: var(--color-white);
+}
+
+.library-detail-sprite-container {
+    border: 2px solid var(--border-color);
+    background-color: #000000;
+    padding: 10px;
+}
+
+.library-detail-body {
+    background-color: #000000;
+    border: 2px solid var(--border-color);
+    padding: 10px;
+}
+
+/* ==========================================
+   レスポンシブ (スマホタブ切替時はスクロール解除)
+   ========================================== */
+@media (max-width: 1024px) {
+    body {
+        overflow: auto; /* モバイルでは自然なスクロールを許可 */
+        height: auto;
+    }
+
+    .game-container {
+        height: auto;
+        margin: 10px auto;
+    }
+
+    .mobile-tabs {
+        display: flex;
+    }
+
+    .game-layout {
+        display: block;
+        height: auto;
+        overflow: visible;
+    }
+
+    .sidebar-left.mobile-hidden,
+    .main-display.mobile-hidden,
+    .sidebar-right.mobile-hidden {
+        display: none !important;
+    }
+
+    .sidebar-left,
+    .main-display,
+    .sidebar-right {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto;
+        overflow: visible;
+        margin-bottom: 20px;
+    }
+
+    /* 各パネルの高さをリセット */
+    .player-status,
+    .inventory-panel,
+    .command-panel,
+    .environment-panel,
+    .corruption-panel,
+    .ecosystem-panel {
+        height: auto !important;
+    }
+
+    .inventory-list {
+        min-height: 80px;
+    }
+
+    .btn {
+        padding: 14px 10px;
+        padding-left: 35px;
+    }
+
+    .eco-cages-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* 表示・非表示切り替え用共通クラス */
+.hidden {
+    display: none !important;
+}
+

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>エコ・ブレイカー (Eco-Breaker) - 生態系操作ローグライクRPG</title>
+    <!-- レトロゲーム風、ドット絵風の日本語フォントを読み込む -->
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 瘴気エフェクト用のオーバーレイ（絶滅時に画面全体を紫にする） -->
+    <div id="miasma-overlay" class="miasma-overlay"></div>
+    
+    <!-- メタ演出用のデータ削除システム画面（非表示スタート） -->
+    <div id="system-delete-modal" class="system-delete-modal hidden">
+        <div class="terminal-container">
+            <div class="terminal-header">
+                <span class="terminal-title">SYSTEM_ADMIN@ECO_BREAKER:~$</span>
+                <span class="terminal-close" id="btn-close-delete-modal">×</span>
+            </div>
+            <div class="terminal-body">
+                <p class="warning-text">⚠️ WARNING: CRITICAL SYSTEM OVERWRITE DETECTED ⚠️</p>
+                <p>対象オブジェクトの「種族データ」を物理削除します。</p>
+                <p>この操作は世界の『腐敗度』を急激に上昇させ、環境を非可逆的に破壊します。</p>
+                <div class="target-info">
+                    <p>削除対象: <span id="delete-target-name" class="highlight">FOREST_SLIME</span></p>
+                    <p>推定腐敗度上昇: <span class="highlight-red">+25%</span></p>
+                </div>
+                <p class="blink-red">本当にこの種族を世界から「削除」しますか？</p>
+                <div class="terminal-buttons">
+                    <button id="btn-confirm-delete" class="btn-terminal btn-danger">[ 削除を実行する ]</button>
+                    <button id="btn-cancel-delete" class="btn-terminal">[ キャンセル ]</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交配（ハイブリッド）操作用モーダル（非表示スタート） -->
+    <div id="breeding-modal" class="system-delete-modal hidden">
+        <div class="terminal-container">
+            <div class="terminal-header">
+                <span class="terminal-title">ECO_SYSTEM_LAB@ECO_BREAKER:~$</span>
+                <span class="terminal-close" id="btn-close-breeding-modal">×</span>
+            </div>
+            <div class="terminal-body">
+                <p class="warning-text" style="color:var(--color-blue) !important; border-color:var(--color-blue); background-color:rgba(0,204,255,0.1)">🔬 生態系ハイブリッド交配ラボ 🔬</p>
+                <p>捕獲ケージにいる2つの個体を消費して交配し、強力な変異種（ハイブリッド）を生成・放流します。</p>
+                <p>※人間（討伐隊）とモンスターを交配させることで、**「禁忌のハイブリッド」**が誕生します。</p>
+                
+                <div class="breeding-selectors">
+                    <label>親個体 1 (消費):
+                        <select id="breed-parent1" class="breed-select">
+                            <!-- JSで捕獲ストックから動的にオプション生成 -->
+                        </select>
+                    </label>
+                    <br><br>
+                    <label>親個体 2 (消費):
+                        <select id="breed-parent2" class="breed-select">
+                            <!-- JSで捕獲ストックから動的にオプション生成 -->
+                        </select>
+                    </label>
+                </div>
+                
+                <p class="warning-desc" style="margin-top: 15px; font-size: 0.75rem; color: var(--text-muted);">※交配を行うと、選択した親個体ストックは各1体ずつ消失します。</p>
+                
+                <div class="terminal-buttons">
+                    <button id="btn-execute-breed" class="btn-terminal">[ 交配を実行する ]</button>
+                    <button id="btn-cancel-breed" class="btn-terminal">[ キャンセル ]</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 図鑑（コレクション）用モーダル（非表示スタート） -->
+    <div id="library-modal" class="system-delete-modal hidden">
+        <div class="terminal-container library-container">
+            <div class="terminal-header">
+                <span class="terminal-title">ECO_ENCYCLOPEDIA@ECO_BREAKER:~$</span>
+                <span class="terminal-close" id="btn-close-library-modal">×</span>
+            </div>
+            <div class="terminal-body library-body">
+                <div class="library-top">
+                    <h2>📚 生態系＆データ収集図鑑</h2>
+                    <span id="library-completion" class="completion-rate">収集率: 0% (0 / 42)</span>
+                </div>
+                
+                <!-- 図鑑カテゴリタブ -->
+                <div class="library-tabs">
+                    <button id="tab-library-monsters" class="tab-btn active">生物・人間 (0/33)</button>
+                    <button id="tab-library-items" class="tab-btn">秘宝・装備 (0/9)</button>
+                </div>
+                
+                <div class="library-main">
+                    <!-- 左側: リスト一覧 -->
+                    <div id="library-list" class="library-list">
+                        <!-- JSで動的生成 -->
+                    </div>
+                    
+                    <!-- 右側: 詳細ビュー -->
+                    <div id="library-detail" class="library-detail">
+                        <p class="select-prompt">リストから項目を選択してください。</p>
+                    </div>
+                </div>
+                
+                <div class="terminal-buttons" style="margin-top: 15px;">
+                    <button id="btn-close-library" class="btn-terminal">[ 図鑑を閉じる ]</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ゲームのメインコンテナ -->
+    <div class="game-container" id="game-container">
+        <!-- ヘッダーエリア -->
+        <header class="game-header">
+            <div class="header-title-area">
+                <h1>ECO-BREAKER</h1>
+                <p class="subtitle">〜生態系操作ローグライクRPG〜</p>
+            </div>
+            <!-- 【新】冒険の書(セーブ/ロード)ボタンをインライン追加 -->
+            <div class="header-system-control">
+                <button id="btn-sidebar-save" class="btn-header-sys">[ おいのり (セーブ) ]</button>
+                <button id="btn-sidebar-load" class="btn-header-sys" disabled>[ ぼうけんのしょ (ロード) ]</button>
+                <button id="btn-sidebar-restart" class="btn-header-sys">[ やり直す (前世同期) ]</button>
+                <button id="btn-sidebar-hard-reset" class="btn-header-sys btn-header-danger">[ 世界線リセット ]</button>
+            </div>
+            <div id="legacy-banner" class="legacy-banner hidden">前世の世界線データを同期中...</div>
+        </header>
+
+        <!-- モバイル用タブナビゲーション（スマホ画面時のみ表示） -->
+        <nav class="mobile-tabs" id="mobile-tabs-nav">
+            <button id="mobile-tab-game" class="mobile-tab-btn active">🎮 プレイ</button>
+            <button id="mobile-tab-status" class="mobile-tab-btn">👤 ステータス</button>
+            <button id="mobile-tab-ecosystem" class="mobile-tab-btn">📊 環境・生態</button>
+        </nav>
+
+        <!-- メイングリッドレイアウト -->
+        <div class="game-layout">
+            
+            <!-- 左サイドバー: プレイヤーのステータス & インベントリ -->
+            <aside class="sidebar-left" id="sidebar-left-col">
+                <div class="panel player-status">
+                    <h2>PLAYER STATUS</h2>
+                    <div class="status-row">
+                        <span>HP:</span>
+                        <span id="player-hp">100 / 100</span>
+                    </div>
+                    <div class="status-bar-outer">
+                        <div id="hp-bar" class="status-bar-inner hp" style="width: 100%;"></div>
+                    </div>
+                    <div class="status-row">
+                        <span>ATK (攻撃力):</span>
+                        <span id="player-atk" class="atk-value">15</span>
+                    </div>
+                    <div class="status-row">
+                        <span>DEF (防御力):</span>
+                        <span id="player-def">10</span>
+                    </div>
+                    <div class="status-row">
+                        <span>GOLD (資金):</span>
+                        <span id="player-gold">100 G</span>
+                    </div>
+                    <div class="status-row">
+                        <span>武器:</span>
+                        <span id="player-equip" class="equip-value">なし</span>
+                    </div>
+                </div>
+
+                <!-- プレイヤーの所持アーティファクト -->
+                <div class="panel inventory-panel">
+                    <h2>ARTIFACTS (ビルド)</h2>
+                    <div id="inventory-list" class="inventory-list">
+                        <p class="no-items">所持アーティファクトなし</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 中央メインエリア -->
+            <main class="main-display" id="main-display-col">
+                <!-- 操作・コマンドパネル -->
+                <div class="panel command-panel">
+                    <h2>COMMANDS</h2>
+                    
+                    <!-- 探索画面のコマンド -->
+                    <div id="explore-commands" class="command-group">
+                        <button id="btn-explore" class="btn btn-primary">周辺を探索する (ターン経過)</button>
+                        <button id="btn-eco-menu" class="btn btn-secondary">生態系操作 (放流/交配)</button>
+                        <button id="btn-open-library" class="btn btn-secondary">図鑑を見る (データ同期)</button>
+                        <button id="btn-rest" class="btn btn-secondary">休息する (20G消費/HP回復)</button>
+                    </div>
+
+                    <!-- 生態系操作サブコマンド -->
+                    <div id="eco-commands" class="command-group hidden">
+                        <button id="btn-release-slime" class="btn btn-warning">スライムを放流 <span class="shop-desc">生息数+2</span></button>
+                        <button id="btn-release-fishman" class="btn btn-warning">ギョジンを放流 <span class="shop-desc">生息数+2</span></button>
+                        <button id="btn-release-goblin" class="btn btn-warning">ゴブリンを放流 <span class="shop-desc">生息数+2</span></button>
+                        <button id="btn-open-breeding" class="btn btn-primary">捕獲個体同士を交配する <span class="shop-desc">変異種の生成</span></button>
+                        <button id="btn-leave-eco" class="btn btn-secondary">戻る</button>
+                    </div>
+
+                    <!-- 戦闘画面のコマンド -->
+                    <div id="battle-commands" class="command-group hidden">
+                        <button id="btn-attack" class="btn btn-danger">たたかう</button>
+                        <button id="btn-capture" class="btn btn-warning">捕獲を試みる (捕獲ケージへ)</button>
+                        <button id="btn-forbidden-item" class="btn btn-warning">禁忌の薬を使う</button>
+                        <!-- メタ演出用のデータ削除ボタン -->
+                        <button id="btn-delete-species" class="btn btn-delete">種族データを削除する (絶滅)</button>
+                        <button id="btn-run" class="btn btn-secondary">逃げる</button>
+                    </div>
+
+                    <!-- 【新】闇の商人：基本メニュー -->
+                    <div id="merchant-commands" class="command-group hidden">
+                        <button id="btn-merchant-buy-menu" class="btn btn-primary">どうぐを買う</button>
+                        <button id="btn-merchant-sell-menu" class="btn btn-warning">どうぐを売る</button>
+                        <button id="btn-leave-merchant" class="btn btn-secondary">立ち去る</button>
+                    </div>
+                    
+                    <!-- 【新】闇の商人：購入リスト -->
+                    <div id="merchant-buy-list" class="command-group hidden">
+                        <button id="btn-buy-glasscannon" class="btn btn-shop">グラスキャノンの核 (100G) <span class="shop-desc">ATK+50, DEF-20</span></button>
+                        <button id="btn-buy-miasma" class="btn btn-shop">瘴気のベール (150G) <span class="shop-desc">毎ターン毒だが与ダメ2倍</span></button>
+                        <button id="btn-buy-poison-reflect" class="btn btn-shop">毒素伝染 of Core (120G) <span class="shop-desc">毒ダメ2倍反射</span></button>
+                        <button id="btn-buy-lowhp-power" class="btn btn-shop">背水のガラス (130G) <span class="shop-desc">HP20%以下でATK3倍&DEF+30</span></button>
+                        <button id="btn-buy-harmony-crest" class="btn btn-shop">保護者の紋章 (90G) <span class="shop-desc">生存種族数×10、DEFアップ</span></button>
+                        <button id="btn-buy-seed-life" class="btn btn-shop">生命 of 種子 (80G) <span class="shop-desc">毎ターンHPが 5 回復</span></button>
+                        <button id="btn-buy-chaos-eye" class="btn btn-shop">混沌の魔眼 (140G) <span class="shop-desc">攻撃時,腐敗度数値分の追加ダメ</span></button>
+                        <button id="btn-merchant-buy-back" class="btn btn-secondary">もどる</button>
+                    </div>
+
+                    <!-- 【新】闇の商人：売却リスト -->
+                    <div id="merchant-sell-list" class="command-group hidden">
+                        <div id="merchant-sell-buttons" style="width:100%; display:contents;">
+                            <!-- ここに売却ボタンが動的に追加されます -->
+                        </div>
+                        <button id="btn-merchant-sell-back" class="btn btn-secondary">もどる</button>
+                    </div>
+
+                    <!-- ゲームオーバー / クリア画面のコマンド -->
+                    <div id="result-commands" class="command-group hidden">
+                        <button id="btn-restart" class="btn btn-primary">最初からやり直す (引き継ぎあり)</button>
+                        <button id="btn-hard-reset" class="btn btn-secondary">世界線を完全リセット (引き継ぎ消去)</button>
+                    </div>
+                </div>
+
+                <!-- マップ・環境ビジュアル & セリフログ窓表示 -->
+                <div class="panel environment-panel">
+                    <div class="environment-header">
+                        <h2>CURRENT FIELD</h2>
+                        <span id="field-name" class="field-title">始まりの調和の森</span>
+                    </div>
+                    
+                    <!-- ドット絵風の背景や影を表現するキャンバス/コンテナ -->
+                    <div id="environment-visual" class="environment-visual forest-bg">
+                        
+                        <!-- 1. 探索画面用ビュー -->
+                        <div id="visual-explore" class="visual-subview">
+                            <div id="env-object" class="env-object-forest"></div>
+                        </div>
+                        
+                        <!-- 2. 戦闘画面用ビュー -->
+                        <div id="visual-battle" class="visual-subview hidden">
+                            <div class="enemy-sprite-container">
+                                <div id="enemy-sprite" class="sprite-slime"></div>
+                                <div class="enemy-info-overlay">
+                                    <span id="enemy-name">スライム</span>
+                                    <span id="enemy-hp">HP: 30/30</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. 闇の商人取引画面用ビュー -->
+                        <div id="visual-merchant" class="visual-subview hidden">
+                            <div class="merchant-visual-container">
+                                <div class="sprite-merchant"></div>
+                                <div class="merchant-speech-bubble">「へへへ、良い品を揃えているぜ。命を削って強さを買わないか？」</div>
+                            </div>
+                        </div>
+
+                        <!-- 4. 生態系操作画面用ビュー -->
+                        <div id="visual-eco" class="visual-subview hidden">
+                            <div class="eco-visual-container">
+                                <h3 class="eco-visual-title">🧬 CAPTURED CAGE (現在の捕獲個体)</h3>
+                                <div class="eco-cages-grid">
+                                    <div class="eco-cage-cell" id="cage-cell-slime">
+                                        <div class="cage-sprite-mini sprite-slime"></div>
+                                        <div class="cage-info">
+                                            <span class="cage-name">スライム</span>
+                                            <span id="stock-slime" class="cage-count">0 体</span>
+                                        </div>
+                                    </div>
+                                    <div class="eco-cage-cell" id="cage-cell-fishman">
+                                        <div class="cage-sprite-mini sprite-fishman"></div>
+                                        <div class="cage-info">
+                                            <span class="cage-name">ギョジン</span>
+                                            <span id="stock-fishman" class="cage-count">0 体</span>
+                                        </div>
+                                    </div>
+                                    <div class="eco-cage-cell" id="cage-cell-goblin">
+                                        <div class="cage-sprite-mini sprite-goblin"></div>
+                                        <div class="cage-info">
+                                            <span class="cage-name">ゴブリン</span>
+                                            <span id="stock-goblin" class="cage-count">0 体</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="eco-cage-cell hidden" id="cage-cell-golem">
+                                        <div class="cage-sprite-mini sprite-wood_golem"></div>
+                                        <div class="cage-info">
+                                            <span class="cage-name">ゴーレム</span>
+                                            <span id="stock-golem" class="cage-count">0 体</span>
+                                        </div>
+                                    </div>
+                                    <div class="eco-cage-cell hidden" id="cage-cell-spider">
+                                        <div class="cage-sprite-mini sprite-stone_spider"></div>
+                                        <div class="cage-info">
+                                            <span class="cage-name">岩蜘蛛</span>
+                                            <span id="stock-spider" class="cage-count">0 体</span>
+                                        </div>
+                                    </div>
+                                    <div class="eco-cage-cell hidden" id="cage-cell-jewel">
+                                        <div class="cage-sprite-mini sprite-jewel_slime"></div>
+                                        <div class="cage-info">
+                                            <span class="cage-name">宝スライム</span>
+                                            <span id="stock-jewel" class="cage-count">0 体</span>
+                                        </div>
+                                    </div>
+                                    <div class="eco-cage-cell hidden" id="cage-cell-paladin">
+                                        <div class="cage-sprite-mini sprite-paladin"></div>
+                                        <div class="cage-info">
+                                            <span class="cage-name">ギルド聖騎士</span>
+                                            <span id="stock-paladin" class="cage-count">0 体</span>
+                                        </div>
+                                    </div>
+                                    <div class="eco-cage-cell hidden" id="cage-cell-mage">
+                                        <div class="cage-sprite-mini sprite-mage"></div>
+                                        <div class="cage-info">
+                                            <span class="cage-name">ギルド魔導士</span>
+                                            <span id="stock-mage" class="cage-count">0 体</span>
+                                        </div>
+                                    </div>
+                                    <div class="eco-cage-cell hidden" id="cage-cell-valkyrie">
+                                        <div class="cage-sprite-mini sprite-valkyrie"></div>
+                                        <div class="cage-info">
+                                            <span class="cage-name">ギルド総長</span>
+                                            <span id="stock-valkyrie" class="cage-count">0 体</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- RPGゲームセリフ風メッセージウィンドウ -->
+                    <div class="rpg-dialog-window">
+                        <div id="log-console" class="rpg-dialog-content">
+                            <p class="system-log">&gt;&gt; エコ・ブレイカーを起動しました。</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 右サイドバー: 生態系モニター & 世界の腐敗度ゲージ -->
+            <aside class="sidebar-right" id="sidebar-right-col">
+                <!-- 腐敗度ゲージ -->
+                <div class="panel corruption-panel">
+                    <h2>WORLD CORRUPTION</h2>
+                    <div class="corruption-value-container">
+                        <span class="label">世界の腐敗度:</span>
+                        <span id="corruption-value" class="corruption-percent">0%</span>
+                    </div>
+                    <div class="status-bar-outer">
+                        <div id="corruption-bar" class="status-bar-inner corruption" style="width: 0%;"></div>
+                    </div>
+                    <p class="corruption-desc">※上昇すると敵が凶悪化し、ギルドから指名手配されますが、ドロップ率とレア度が増加します。</p>
+                </div>
+
+                <!-- 生態系モニター -->
+                <div class="panel ecosystem-panel">
+                    <h2>ECOSYSTEM MONITOR</h2>
+                    <ul class="ecosystem-list">
+                        <li>
+                            <span class="species-name">🟢 森のスライム</span>
+                            <span id="count-slime" class="species-count">10 / 10 (生存)</span>
+                        </li>
+                        <li>
+                            <span class="species-name">🔵 湖のギョジン</span>
+                            <span id="count-fishman" class="species-count">8 / 8 (生存)</span>
+                        </li>
+                        <li>
+                            <span class="species-name">🔴 洞窟 of ゴブリン</span>
+                            <span id="count-goblin" class="species-count">5 / 5 (生存)</span>
+                        </li>
+                    </ul>
+                    <p class="ecosystem-effect" id="ecosystem-effect-text">生態系は安定しています。</p>
+                </div>
+            </aside>
+
+        </div>
+    </div>
+
+    <!-- ゲームロジックJSの読み込み -->
+    <script src="script.js"></script>
+</body>
+</html>
